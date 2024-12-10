@@ -45,7 +45,7 @@ for locations in location:
     def fetch_weather_data():
   
 
-    for day in data["forecast"]["forecastday"]:
+        for day in data["forecast"]["forecastday"]:
                 for hour_data in day["hour"]:
                     date = hour_data["time"][:9]
                     hour = hour_data["time"][9:]
