@@ -1,82 +1,59 @@
 import requests
 import sqlite3
+import time
+from datetime import datetime, timedelta
 
-url = "https://api.airvisual.com/v2/city"
-params = {
-    "city": "Santa Clara",
-    "state": "California",
-    "start_date": "2020-09-01",
-    "end_date": "2020-09-30",
-    "country": "USA",
-    "key": "c10feb4c-d997-4b79-8b90-12071d06536b"  # Replace with your actual API key
-}
-
-response = requests.get(url, params=params)
-
-if response.status_code == 200:
-    data = response.json()
-    print(data)
-else:
-    print(f"Error: {response.status_code}, {response.text}")
-
-# Set up database
+# Database setup
 conn = sqlite3.connect("WeatherAirQuality.db")
 cur = conn.cursor()
 
-# Create table
+# Create table for Air Quality Data
 cur.execute('''
-CREATE TABLE IF NOT EXISTS WeatherAirQualityData (
+CREATE TABLE IF NOT EXISTS AirQualityData (
     date TEXT,
     hour TEXT,
-    temp_c REAL,
-    condition TEXT,
-    wind_mph REAL,
-    humidity INTEGER,
     aqi INTEGER,
     main_pollutant TEXT
 )
 ''')
 
-# Function to fetch data from APIs
-def fetch_data(city, state, country, iqair_key, weather_key):
-    # IQAir API
-    iqair_url = f"https://api.airvisual.com/v2/city?city={city}&state={state}&country={country}&key={iqair_key}"
-    iqair_response = requests.get(iqair_url)
-    
-    if iqair_response.status_code == 200:
-        iqair_data = iqair_response.json()
-        aqi = iqair_data["data"]["current"]["pollution"]["aqius"]  # US AQI
-        main_pollutant = iqair_data["data"]["current"]["pollution"]["mainus"]
-    else:
-        print(f"Failed to fetch air quality data for {city}. Status: {iqair_response.status_code}")
-        return
+def fetch_air_quality_data(city, state, country, api_key, current_date):
+    """
+    Fetches real-time air quality data and stores it in the database.
+    """
+    url = f"https://api.airvisual.com/v2/city?city={city}&state={state}&country={country}&key={api_key}"
+    response = requests.get(url)
 
+    if response.status_code == 200:
+        data = response.json()
+        pollution = data["data"]["current"]["pollution"]
+        aqi = pollution["aqius"]
+        main_pollutant = pollution["mainus"]
+
+        # Use the current_date and format it
+        date = current_date.strftime("%Y-%m-%d")
+        hour = current_date.strftime("%H:%M")
+
+        # Insert into the database
+        cur.execute('''
+        INSERT INTO AirQualityData (date, hour, aqi, main_pollutant)
+        VALUES (?, ?, ?, ?)
+        ''', (date, hour, aqi, main_pollutant))
         conn.commit()
-    
+        print(f"Air quality data for {city} on {date} at {hour} stored successfully.")
+    else:
+        print(f"Failed to fetch air quality data. Status Code: {response.status_code}")
 
-# Close connection
+# Set start and end dates
+start_date = datetime(2024, 12, 2)
+end_date = datetime(2024, 12, 8)
+current_date = start_date
+
+# Fetch data for each hour between start and end dates
+while current_date <= end_date:
+    fetch_air_quality_data("Detroit", "Michigan", "USA", "c10feb4c-d997-4b79-8b90-12071d06536b", current_date)
+    current_date += timedelta(hours=1)
+    time.sleep(5)  # Adjust for testing (use longer sleep time in production)
+
 conn.close()
 
-# Function to fetch data from APIs
-def fetch_data(city, state, country, iqair_key, weather_key):
-# IQAir API
-    iqair_url = f"https://api.airvisual.com/v2/city?city={city}&state={state}&country={country}&key={iqair_key}"
-    iqair_response = requests.get(iqair_url)
-
-    if iqair_response.status_code == 200:
-        iqair_data = iqair_response.json()
-        aqi = iqair_data["data"]["current"]["pollution"]["aqius"] # US AQI
-        main_pollutant = iqair_data["data"]["current"]["pollution"]["mainus"]
-        date = iqair_data['data']['current']['pollution']['ts'][:10] 
-        hour = iqair_data['data']['current']['pollution']['ts'][10:16] 
-    else:
-        print(f"Failed to fetch air quality data for {city}. Status: {iqair_response.status_code}")
-        return
-
-        conn.commit()
-
-
-cur.execute('''
-                    INSERT INTO WeatherAirQualityData (date, hour, aqi, main_pollant, iqair)
-                    VALUES (?, ?, ?, ?, ?)
-                    ''', (date, hour, aqi, main_pollant, iqair))

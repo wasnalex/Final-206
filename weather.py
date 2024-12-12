@@ -1,114 +1,52 @@
 import requests
-import matplotlib 
 import sqlite3
-import time 
-from datetime import datetime
-#This cowork request the weather for url
-AP_key = "e2566028033342cebf212759240312"
-location = ["Los Angeles"]           
-days = 7
-for locations in location:
 
-    url = f"http://api.weatherapi.com/v1/forecast.json?key={AP_key}&q={locations}&days={days}"
+# Database setup
+conn = sqlite3.connect("WeatherAirQuality.db")
+cur = conn.cursor()
+
+# Create table for Weather Data
+cur.execute('''
+CREATE TABLE IF NOT EXISTS WeatherData (
+    date TEXT,
+    hour TEXT,
+    temp_c REAL,
+    condition TEXT,
+    wind_mph REAL,
+    humidity INTEGER
+)
+''')
+
+def fetch_weather_data(location, api_key, days=7):
+    """
+    Fetches hourly weather forecast and stores it in the database.
+    """
+    url = f"http://api.weatherapi.com/v1/forecast.json?key={api_key}&q={location}&days={days}"
     response = requests.get(url)
-    
+
     if response.status_code == 200:
-            print(f"Fetching data for {location}")
-            data = response.json()
-
-            # Check the structure of the data
-            print(f"Sample data for {location}: {data['forecast']['forecastday'][0]}")
-
-            for day in data["forecast"]["forecastday"]:
-                for hour_data in day["hour"]:
-                    date = hour_data["time"][:10]
-                    hour = hour_data["time"][11:]
-                    temp_c = hour_data["temp_c"]
-                    condition = hour_data["condition"]["text"]
-                    wind_mph = hour_data["wind_mph"]
-                    humidity = hour_data["humidity"]
-
-                    # Insert into database
-                    cur.execute('''
-                    INSERT INTO WeatherData (date, hour, temp_c, condition, wind_mph, humidity)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (date, hour, temp_c, condition, wind_mph, humidity))
-
-            conn.commit()
-    else:
-            print(f"Failed to fetch data for {location}. Status Code: {response.status_code}")
-    
-
-
-    data["forecast"]["forecastday"][0]["hour"]
-
-    def fetch_weather_data():
-  
-
+        data = response.json()
         for day in data["forecast"]["forecastday"]:
-                for hour_data in day["hour"]:
-                    date = hour_data["time"][:9]
-                    hour = hour_data["time"][9:]
-                    temp_c = hour_data["temp_c"]
-                    condition = hour_data["condition"]["text"]
-                    wind_mph = hour_data["wind_mph"]
-                    humidity = hour_data["humidity"]
+            for hour_data in day["hour"]:
+                date = hour_data["time"][:10]
+                hour = hour_data["time"][11:]
+                temp_c = hour_data["temp_c"]
+                condition = hour_data["condition"]["text"]
+                wind_mph = hour_data["wind_mph"]
+                humidity = hour_data["humidity"]
 
-                # Insert into database
-                    cur.execute('''
-                    INSERT INTO WeatherData (date, hour, temp_c, condition, wind_mph, humidity)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (date, hour, temp_c, condition, wind_mph, humidity))
-
-    conn.commit()
-    
-
-    # This function is useful for quickly checking the integrity 
-#and basic structure of the WeatherData table.
-def verify_weather_data():
-    cur.execute("SELECT COUNT(*) FROM WeatherData")
-    total_rows = cur.fetchone()[0]
-    print(f"Total weather data rows: {total_rows}")
-
-    cur.execute("SELECT * FROM WeatherData LIMIT 5")
-    sample_rows = cur.fetchall()
-    print("Sample weather data:", sample_rows)
-
-# Call the function to verify data
-verify_weather_data()
-
-
-
-def check_duplicates():
-    query = '''
-    SELECT date, hour, COUNT(*)
-    FROM WeatherData
-    GROUP BY date, hour
-    HAVING COUNT(*) > 1
-    '''
-    cur.execute(query)
-    duplicates = cur.fetchall()
-    if duplicates:
-        print(f"Found duplicates: {duplicates}")
+                # Insert data into the database
+                cur.execute('''
+                INSERT INTO WeatherData (date, hour, temp_c, condition, wind_mph, humidity)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''', (date, hour, temp_c, condition, wind_mph, humidity))
+        conn.commit()
+        print(f"Weather data for {location} stored successfully.")
     else:
-        print("No duplicates found.")
+        print(f"Failed to fetch weather data. Status Code: {response.status_code}, {response.text}")
 
-# Call the function
-check_duplicates()
+# Fetch data for Detroit, MI
+fetch_weather_data("Detroit, MI", "e2566028033342cebf212759240312")
 
+conn.close()
 
-
-def remove_duplicates():
-    query = '''
-    DELETE FROM WeatherData
-    WHERE ROWID NOT IN (
-        SELECT MIN(ROWID)
-        FROM WeatherData
-        GROUP BY date, hour, location
-    )
-    '''
-    cur.execute(query)
-    conn.commit()
-    print("Duplicates removed successfully.")
-
-# Call the function
