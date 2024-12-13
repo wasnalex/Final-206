@@ -1,30 +1,20 @@
-import sqlite3
-
-def query_air_quality_data():
+def count_air_quality_data_by_date():
     """
-    Queries and analyzes air quality data from the AirQualityData table.
+    Counts occurrences of each date in AirQualityData and prints the results.
     """
     conn = sqlite3.connect("WeatherAirQuality.db")
     cur = conn.cursor()
 
-    # Total records in AirQualityData
-    cur.execute("SELECT COUNT(*) FROM AirQualityData")
-    total_records = cur.fetchone()[0]
-    print(f"Total Air Quality Records: {total_records}")
+    cur.execute('''
+        SELECT date, COUNT(*) AS occurrences
+        FROM AirQualityData
+        GROUP BY date
+        ORDER BY date
+    ''')
+    results = cur.fetchall()
 
-    # Average AQI
-    cur.execute("SELECT AVG(aqi) FROM AirQualityData")
-    avg_aqi = cur.fetchone()[0]
-    print(f"Average AQI: {avg_aqi:.2f}")
-
-    # Most frequent main pollutant
-    cur.execute("SELECT main_pollutant, COUNT(*) FROM AirQualityData GROUP BY main_pollutant ORDER BY COUNT(*) DESC LIMIT 1")
-    most_frequent_pollutant = cur.fetchone()
-    if most_frequent_pollutant:
-        print(f"Most Frequent Main Pollutant: {most_frequent_pollutant[0]} ({most_frequent_pollutant[1]} occurrences)")
-
-    # Close connection
+    print("Air Quality Data Date Counts:")
+    for date, count in results:
+        print(f"{date}: {count}")
     conn.close()
 
-if __name__ == "__main__":
-    query_air_quality_data()
