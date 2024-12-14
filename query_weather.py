@@ -1,4 +1,6 @@
 import sqlite3
+# This script calculates and displays the number of weather data records for each unique date 
+# in the WeatherData table of the SQLite database WeatherAirQuality.db.
 
 def count_weather_data_by_date():
     """

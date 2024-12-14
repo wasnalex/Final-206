@@ -1,3 +1,10 @@
+# Final Project - SI 206/ Fall 2024
+# Group name: Popcorn
+# Aleandra Wasington
+# Olga Hamilton
+# Weather and AirQuality APIs, SQL, and Visualizations
+
+
 import requests
 import sqlite3
 from datetime import datetime, timedelta
@@ -16,6 +23,7 @@ CREATE TABLE IF NOT EXISTS Dates (
 ''')
 
 # Create the AirQualityData table
+cur.execute("DROP TABLE IF EXISTS AirQualityData")
 cur.execute('''
 CREATE TABLE IF NOT EXISTS AirQualityData (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +35,7 @@ CREATE TABLE IF NOT EXISTS AirQualityData (
     FOREIGN KEY (date_id) REFERENCES Dates(id)
 )
 ''')
+conn.commit()
 
 def fetch_air_quality_data(city, state, country, api_key, current_date):
     """
@@ -34,6 +43,7 @@ def fetch_air_quality_data(city, state, country, api_key, current_date):
     Limits to 25 entries per run and avoids duplicate data.
     """
     url = f"https://api.airvisual.com/v2/city?city={city}&state={state}&country={country}&key={api_key}"
+   
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -91,19 +101,20 @@ def fetch_air_quality_data(city, state, country, api_key, current_date):
             row_count += 1
 
         conn.commit()
-        print(f"Stored {row_count} new entries for {date}.")
+        print(f"Air quality data Stored {row_count} new entries for {date}.")
+      
     else:
         print(f"Failed to fetch air quality data for {current_date.strftime('%Y-%m-%d')}. Status Code: {response.status_code}, {response.text}")
 
 # Example loop to fetch data for a week
 start_date = datetime(2024, 12, 2)
-end_date = datetime(2024, 12, 8)
+end_date = datetime(2024, 12, 6)
 
 current_date = start_date
 while current_date <= end_date:
-    fetch_air_quality_data("Detroit", "Michigan", "USA", "c2e81695e-e960-4a33-8e44-0fbfc28099c9", current_date)
+    fetch_air_quality_data("Detroit", "Michigan", "USA", "2e81695e-e960-4a33-8e44-0fbfc28099c9", current_date)
     current_date += timedelta(days=1)  # Move to the next day
     time.sleep(5)  # Adjust for testing or API rate limits
-
+#2e81695e-e960-4a33-8e44-0fbfc28099c9
 conn.close()
 

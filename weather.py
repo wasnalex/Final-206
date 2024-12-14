@@ -1,3 +1,9 @@
+# Final Project - SI 206/ Fall 2024
+# Group name: Popcorn
+# Aleandra Wasington
+# Olga Hamilton
+# Weather and AirQuality APIs, SQL, and Visualizations
+
 import requests
 import sqlite3
 from datetime import datetime, timedelta
@@ -70,6 +76,7 @@ def fetch_weather_data(location, api_key, start_date, end_date):
         current_date += timedelta(days=1)
 
 # Example usage: Fetch data from start date to end date
-fetch_weather_data("Detroit, MI", "e2566028033342cebf212759240312", "2024-12-02", "2024-12-08")
+fetch_weather_data("Detroit, MI", "e2566028033342cebf212759240312", "2024-12-02", "2024-12-06")
+
 
 conn.close()
