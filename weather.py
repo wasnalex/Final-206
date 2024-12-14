@@ -34,7 +34,8 @@ def create_date_table(date):
 
 def fetch_weather_data(location, api_key, start_date, end_date):
     """
-    Fetches hourly weather forecast for each date in the range and stores it in the database.
+    Fetches hourly weather forecast for each date in the range 12/2/2024 to 12/6/2024
+    and stores it in the database.
     Stops after inserting up to 25 rows of data per day.
     """
     current_date = datetime.strptime(start_date, "%Y-%m-%d")
@@ -75,8 +76,9 @@ def fetch_weather_data(location, api_key, start_date, end_date):
 
         current_date += timedelta(days=1)
 
-# Example usage: Fetch data from start date to end date
+# Fetch weather data for 12/2/2024 - 12/6/2024
 fetch_weather_data("Detroit, MI", "e2566028033342cebf212759240312", "2024-12-02", "2024-12-06")
 
-
 conn.close()
+
+

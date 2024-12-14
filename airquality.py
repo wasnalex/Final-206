@@ -14,73 +14,70 @@ import time
 conn = sqlite3.connect("WeatherAirQuality.db")
 cur = conn.cursor()
 
-# Create the Dates table
-cur.execute('''
-CREATE TABLE IF NOT EXISTS Dates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL UNIQUE
-)
-''')
+def create_date_table(date):
+    """
+    Creates a table for a specific date if it doesn't already exist.
+    """
+    table_name = f"AirQualityData_{date.replace('-', '_')}"
+    cur.execute(f'''
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hour TEXT NOT NULL,
+            aqi_category INTEGER NOT NULL,
+            main_pollutant TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    return table_name
 
-# Create the AirQualityData table
-cur.execute("DROP TABLE IF EXISTS AirQualityData")
-cur.execute('''
-CREATE TABLE IF NOT EXISTS AirQualityData (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date_id INTEGER NOT NULL,
-    hour TEXT NOT NULL,
-    aqi INTEGER NOT NULL,
-    main_pollutant TEXT NOT NULL,
-    UNIQUE(date_id, hour, main_pollutant),
-    FOREIGN KEY (date_id) REFERENCES Dates(id)
-)
-''')
-conn.commit()
+def aqi_to_category(aqi):
+    """
+    Maps AQI values to categories (1-5).
+    """
+    if aqi <= 50:
+        return 1  # Good
+    elif aqi <= 100:
+        return 2  # Moderate
+    elif aqi <= 150:
+        return 3  # Unhealthy for Sensitive Groups
+    elif aqi <= 200:
+        return 4  # Unhealthy
+    else:
+        return 5  # Very Unhealthy
 
 def fetch_air_quality_data(city, state, country, api_key, current_date):
     """
     Fetches real-time air quality data for a specific date and stores it in the database.
-    Limits to 25 entries per run and avoids duplicate data.
+    Simulates hourly data with a limit of 25 entries per run.
     """
     url = f"https://api.airvisual.com/v2/city?city={city}&state={state}&country={country}&key={api_key}"
-   
     response = requests.get(url)
 
     if response.status_code == 200:
         data = response.json()
-
-        # Format the date
         date = current_date.strftime("%Y-%m-%d")
-
-        # Insert date into Dates table
-        cur.execute('''
-            INSERT OR IGNORE INTO Dates (date) VALUES (?)
-        ''', (date,))
-        # Retrieve the date ID
-        cur.execute('''
-            SELECT id FROM Dates WHERE date = ?
-        ''', (date,))
-        date_id = cur.fetchone()[0]
+        table_name = create_date_table(date)
 
         # Check how many rows already exist for this date
-        cur.execute('''
-            SELECT COUNT(*) FROM AirQualityData WHERE date_id = ?
-        ''', (date_id,))
+        cur.execute(f'''
+            SELECT COUNT(*) FROM {table_name}
+        ''')
         existing_rows = cur.fetchone()[0]
+        print(f"Existing rows in {table_name}: {existing_rows}")
 
-        # Limit entries to 25 rows per run
-        if existing_rows >= 25:
-            print(f"Already stored 25 entries for {date}. Run again to fetch more data.")
+        if existing_rows >= 24:
+            print(f"All 24 entries already stored for {date}.")
             return
 
-        # Process hourly data (simulated 24-hour data)
         row_count = 0
+        print(f"Simulating data for {date}. Starting from hour: {existing_rows}")
         for hour in range(existing_rows, 24):
-            if row_count >= 25:
+            if row_count >= 25:  # Limit to 25 rows per run
                 break
 
             hour_time = f"{hour:02d}:00"
             pollution = data.get("data", {}).get("current", {}).get("pollution", {})
+            print(f"Pollution data for {hour_time}: {pollution}")
             if not pollution:
                 print(f"No data available for {hour_time} on {date}")
                 continue
@@ -88,21 +85,22 @@ def fetch_air_quality_data(city, state, country, api_key, current_date):
             aqi = pollution.get("aqius", None)
             main_pollutant = pollution.get("mainus", None)
 
-            # Skip if data is incomplete
             if aqi is None or main_pollutant is None:
                 print(f"Incomplete data for {hour_time} on {date}")
                 continue
 
-            # Insert into AirQualityData table, referencing the date ID
-            cur.execute('''
-                INSERT OR IGNORE INTO AirQualityData (date_id, hour, aqi, main_pollutant)
-                VALUES (?, ?, ?, ?)
-            ''', (date_id, hour_time, aqi, main_pollutant))
+            # Convert AQI to category ID
+            aqi_category = aqi_to_category(aqi)
+
+            # Insert into the specific date's table
+            cur.execute(f'''
+                INSERT INTO {table_name} (hour, aqi_category, main_pollutant)
+                VALUES (?, ?, ?)
+            ''', (hour_time, aqi_category, main_pollutant))
             row_count += 1
 
         conn.commit()
-        print(f"Air quality data Stored {row_count} new entries for {date}.")
-      
+        print(f"Stored {row_count} new entries for {date} in table {table_name}.")
     else:
         print(f"Failed to fetch air quality data for {current_date.strftime('%Y-%m-%d')}. Status Code: {response.status_code}, {response.text}")
 
@@ -113,8 +111,8 @@ end_date = datetime(2024, 12, 6)
 current_date = start_date
 while current_date <= end_date:
     fetch_air_quality_data("Detroit", "Michigan", "USA", "2e81695e-e960-4a33-8e44-0fbfc28099c9", current_date)
-    current_date += timedelta(days=1)  # Move to the next day
-    time.sleep(5)  # Adjust for testing or API rate limits
-#2e81695e-e960-4a33-8e44-0fbfc28099c9
+    current_date += timedelta(days=1)
+    time.sleep(5)
+
 conn.close()
 

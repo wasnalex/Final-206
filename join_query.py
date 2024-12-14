@@ -3,42 +3,76 @@
 # Aleandra Wasington
 # Olga Hamilton
 # Weather and AirQuality APIs, SQL, and Visualizations
-
 import sqlite3
 import csv
-# This script performs a join operation between two tables, WeatherData and AirQualityData, 
-# in an SQLite database and writes the resulting data into a CSV file.
-def join_weather_and_air_quality():
-    """
-    Performs a join query between WeatherData and AirQualityData
-    using date and hour as the shared keys.
-    Writes the results to a CSV file.
-    """
-    conn = sqlite3.connect("WeatherAirQuality.db")
-    cur = conn.cursor()
 
-    # Perform the join query
+# Connect to the database
+conn = sqlite3.connect("WeatherAirQuality.db")
+cur = conn.cursor()
+
+def combine_weather_air_data():
+    """
+    Combines data from WeatherData and AirQualityData using SELECT and JOIN
+    and inserts the result into WeatherAirQualityData.
+    """
+    print("Combining data from WeatherData and AirQualityData...")
+
+    # SQL JOIN query to combine the data
     cur.execute('''
-        SELECT 
-            w.date, 
-            w.hour, 
-            w.temp_c, 
-            w.condition, 
-            w.humidity, 
-            a.aqi, 
-            a.main_pollutant
+        SELECT w.date, w.hour, w.temp_c, w.condition, w.wind_mph, w.humidity, 
+               a.aqi AS aqi_category, a.main_pollutant
         FROM WeatherData w
-        JOIN AirQualityData a
-        ON w.date = a.date AND w.hour = a.hour
+        JOIN Dates d ON w.date = d.date
+        JOIN AirQualityData a ON d.id = a.date_id AND w.hour = a.hour
     ''')
-    results = cur.fetchall()
+    combined_data = cur.fetchall()
 
-    # Write the joined data (Results) to a CSV file
-    with open("WeatherAirQuality_JoinedData.csv", "w", newline="") as file:
+    if not combined_data:
+        print("No matching data found between WeatherData and AirQualityData.")
+        return
+
+    print(f"Found {len(combined_data)} rows to insert into WeatherAirQualityData.")
+
+    # Insert combined data into WeatherAirQualityData table
+    cur.executemany('''
+        INSERT INTO WeatherAirQualityData 
+        (date, hour, temp_c, condition, wind_mph, humidity, aqi_category, main_pollutant)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', combined_data)
+
+    conn.commit()
+    print(f"Inserted {len(combined_data)} rows into WeatherAirQualityData.")
+
+def export_to_csv():
+    """
+    Exports data from WeatherAirQualityData to a CSV file.
+    """
+    print("Exporting WeatherAirQualityData to CSV...")
+
+    # Fetch data from the combined table
+    cur.execute("SELECT * FROM WeatherAirQualityData")
+    data = cur.fetchall()
+
+    if not data:
+        print("No data found in WeatherAirQualityData to export.")
+        return
+
+    # Define the CSV file name
+    csv_file = "WeatherAirQualityData.csv"
+
+    # Write the data to a CSV file
+    with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
-        writer.writerow(["Date", "Hour", "Temperature (C)", "Condition", "Humidity", "AQI", "Main Pollutant"])
-        writer.writerows(results)
-        #if not results:
-            #print("No weather data found.")
-    print("Joined data written to WeatherAirQuality_JoinedData.csv successfully.")
-    conn.close()
+        # Write the headers
+        writer.writerow(["id", "date", "hour", "temp_c", "condition", "wind_mph", "humidity", "aqi_category", "main_pollutant"])
+        # Write the data
+        writer.writerows(data)
+
+    print(f"Data successfully exported to {csv_file}.")
+
+# Combine data and export it to a CSV
+combine_weather_air_data()
+export_to_csv()
+
+conn.close()
+
