@@ -30,6 +30,24 @@ def calculate_averages():
         print(f"{row[0]:<15}{row[1]:<20}{row[2]:<10.2f}{row[3]:<15.2f}")
 
     return results
+def write_to_text_file(results, filename="averages.txt"):
+    """
+    Writes the calculated averages to a text file.
+    """
+    with open(filename, "w") as file:
+        file.write("Averages by Condition\n")
+        file.write(f"{'Condition ID':<15}{'Condition':<20}{'Avg AQI':<10}{'Avg Temp (C)':<15}\n")
+        file.write("=" * 60 + "\n")
+        
+        for row in results:
+            file.write(f"{row[0]:<15}{row[1]:<20}{row[2]:<10.2f}{row[3]:<15.2f}\n")
+
+    print(f"\nAverages have been written to {filename}")
+
+# Run the calculations and write to a text file
+averages = calculate_averages()
+write_to_text_file(averages)
+
 
 def plot_averages(data):
     """

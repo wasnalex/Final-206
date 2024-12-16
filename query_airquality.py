@@ -46,7 +46,7 @@ def plot_condition_frequencies(data):
 
     # Create the bar chart
     plt.figure(figsize=(8, 6))
-    plt.bar(labels, counts, alpha=0.7)
+    plt.bar(labels, counts, color = "purple", alpha=0.7)
     plt.title("Frequency of Weather Conditions")
     plt.xlabel("Condition")
     plt.ylabel("Frequency")

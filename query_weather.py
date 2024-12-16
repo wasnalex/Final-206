@@ -44,7 +44,7 @@ def count_weather_data_by_date():
             counts = [row[1] for row in results]
 
             plt.figure(figsize=(10, 6))  # Adjust figure size
-            bars = plt.bar(dates, counts, color='skyblue', label='Occurrences')  # Create bar chart and add label
+            bars = plt.bar(dates, counts, color='red', label='Occurrences')  # Create bar chart and add label
             plt.xlabel('Date')
             plt.ylabel('Occurrences')
             plt.title('Weather Data Occurrences by Date')

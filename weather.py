@@ -80,7 +80,7 @@ def fetch_weather_data(location, api_key, start_date, end_date):
         current_date += timedelta(days=1)
 
 # Fetch weather data for 12/2/2024 - 12/6/2024
-fetch_weather_data("Detroit, MI", "e2566028033342cebf212759240312", "2024-12-02", "2024-12-06")
+fetch_weather_data("Detroit, MI", "613203fc6a0b4b409b2162326241612", "2024-12-02", "2024-12-06")
 
 conn.close()
 
