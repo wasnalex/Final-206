@@ -4,66 +4,102 @@
 # Olga Hamilton
 # Weather and AirQuality APIs, SQL, and Visualizations
 
+
+
+
+
+# Connect to the database
+conn = sqlite3.connect("WeatherAirQuality.db")
+cur = conn.cursor()
+
+def fetch_condition_data():
+    """
+    Fetches condition_id counts from the WeatherAirQualityData table.
+    """
+    cur.execute('''
+        SELECT condition_id, COUNT(*) as count
+        FROM WeatherAirQualityData
+        GROUP BY condition_id
+        ORDER BY condition_id
+    ''')
+    rows = cur.fetchall()
+    return rows
+
+def plot_condition_frequencies(data):
+    """
+    Plots a bar chart of condition frequencies.
+    """
+    # Extract condition_ids and counts
+    condition_ids = [row[0] for row in data]
+    counts = [row[1] for row in data]
+
+    # Map condition_ids to condition names (assuming the mapping is known)
+    condition_names = {
+        1: "Cloudy",
+        2: "Overcast",
+        3: "Partly Cloudy",
+        4: "Mist"
+    }
+    labels = [condition_names.get(cond_id, f"ID {cond_id}") for cond_id in condition_ids]
+
+    # Create the bar chart
+    plt.figure(figsize=(8, 6))
+    plt.bar(labels, counts, alpha=0.7)
+    plt.title("Frequency of Weather Conditions")
+    plt.xlabel("Condition")
+    plt.ylabel("Frequency")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# Fetch data and plot the graph
+data = fetch_condition_data()
+plot_condition_frequencies(data)
+
+# Close the database connection
+conn.close()
+
+
 import sqlite3
 import matplotlib.pyplot as plt
 
-def count_air_quality_data_by_date():
+# Connect to the database
+conn = sqlite3.connect("WeatherAirQuality.db")
+cur = conn.cursor()
+
+def fetch_temp_aqi_data():
     """
-    Counts occurrences of each date in AirQualityData, prints the results,
-    and visualizes AQI trends over time using a line chart.
+    Fetches temperature and AQI data from the WeatherAirQualityData table.
     """
-    print("Function started") 
-    results = []  # Initialize results to store data for visualization
+    cur.execute('''
+        SELECT temp_c, aqi
+        FROM WeatherAirQualityData
+        WHERE temp_c IS NOT NULL AND aqi IS NOT NULL
+    ''')
+    rows = cur.fetchall()
+    return rows
 
-    try:
-        # Connect to the database
-        conn = sqlite3.connect("WeatherAirQuality.db")
-        cur = conn.cursor()
-        print("Connected to database") 
+def plot_temp_vs_aqi(data):
+    """
+    Plots a scatter plot of Temperature vs. AQI.
+    """
+    # Extract temperatures and AQI values
+    temperatures = [row[0] for row in data]
+    aqi_values = [row[1] for row in data]
 
-        # Execute the query to get date and count of occurrences
-        cur.execute('''
-            SELECT d.date, COUNT(a.date_id) AS occurrences
-            FROM AirQualityData a
-            JOIN Dates d ON a.date_id = d.id
-            GROUP BY d.date
-            ORDER BY d.date
-        ''')
-        results = cur.fetchall()
+    # Create the scatter plot
+    plt.figure(figsize=(8, 6))
+    plt.scatter(temperatures, aqi_values, alpha=0.7, edgecolors='k')
+    plt.title("Temperature vs. AQI")
+    plt.xlabel("Temperature (°C)")
+    plt.ylabel("Air Quality Index (AQI)")
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.tight_layout()
+    plt.show()
 
-        print(f"Query returned {len(results)} results")
-        print("Air Quality Data Date Counts:")
+# Fetch data and plot the graph
+data = fetch_temp_aqi_data()
+plot_temp_vs_aqi(data)
 
-        # Print results
-        for date, count in results:
-            print(f"{date}: {count}") 
-
-        # Visualization
-        if results:
-            # Extract dates and counts
-            dates = [row[0] for row in results]
-            counts = [row[1] for row in results]
-
-            # Plot the line chart
-            plt.figure(figsize=(12, 6))
-            plt.plot(dates, counts, marker='o', linestyle='-', color='blue', label='AQI Occurrences')
-            plt.xlabel('Date')
-            plt.ylabel('Occurrences')
-            plt.title('Air Quality Data Occurrences Over Time')
-            plt.xticks(rotation=45, ha='right')  # Rotate date labels for better readability
-            plt.legend()
-            plt.tight_layout()  # Adjust layout to prevent overlap
-            plt.grid(True)  # Add a grid for better readability
-            plt.show()
-        else:
-            print("No data to visualize.")
-
-    except Exception as e:
-        print(f"An error occurred: {e}")  # Print any exceptions
-    finally:
-        if conn:
-            conn.close()
-        print("Function finished") 
-
-# Call the function
-count_air_quality_data_by_date()
+# Close the database connection
+conn.close()
