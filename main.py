@@ -1,57 +1,70 @@
-# Final Project - SI 206/ Fall 2024
-# Group name: Popcorn
-# Aleandra Wasington
-# Olga Hamilton
-# Weather and AirQuality APIs, SQL, and Visualizations
-# pull all queries, and every file plus visualizations here
-
-import pandas as pd
+import sqlite3
 import matplotlib.pyplot as plt
 
-# Load the CSV file into a DataFrame
-data = pd.read_csv("WeatherAirQuality_JoinedData.csv")
+# Connect to the database
+conn = sqlite3.connect("WeatherAirQuality.db")
+cur = conn.cursor()
 
-# Preview the data
-print(data.head())
+def calculate_averages():
+    """
+    Calculates the average AQI and temperature (temp_c) for each condition.
+    """
+    print("\nCalculating averages for each condition_id...")
+    cur.execute('''
+        SELECT 
+            w.condition_id, 
+            wc.condition, 
+            AVG(w.aqi) AS avg_aqi, 
+            AVG(w.temp_c) AS avg_temp_c
+        FROM WeatherAirQualityData w
+        JOIN WeatherConditions wc
+        ON w.condition_id = wc.id
+        GROUP BY w.condition_id
+        ORDER BY w.condition_id
+    ''')
+    results = cur.fetchall()
 
-#Create the Visualizations
-#Use Matplotlib to plot the data.
+    print("\nAverages by Condition:")
+    print(f"{'Condition ID':<15}{'Condition':<20}{'Avg AQI':<10}{'Avg Temp (C)':<15}")
+    for row in results:
+        print(f"{row[0]:<15}{row[1]:<20}{row[2]:<10.2f}{row[3]:<15.2f}")
 
-#1. Scatter Plot: Temperature vs. AQI
-plt.figure(figsize=(10, 6))
-plt.scatter(data['Temperature (C)'], data['AQI'], alpha=0.7, c='blue')
-plt.title("Scatter Plot: Temperature vs AQI")
-plt.xlabel("Temperature (°C)")
-plt.ylabel("Air Quality Index (AQI)")
-plt.grid(True)
-plt.show()
+    return results
 
-#Bar Chart: Average AQI by Weather Condition
-avg_aqi_condition = data.groupby("Condition")["AQI"].mean()
+def plot_averages(data):
+    """
+    Plots the average AQI and temperature for each condition.
+    """
+    # Extract data for plotting
+    conditions = [row[1] for row in data]
+    avg_aqi = [row[2] for row in data]
+    avg_temp = [row[3] for row in data]
 
-plt.figure(figsize=(12, 6))
-avg_aqi_condition.plot(kind='bar', color='skyblue')
-plt.title("Average AQI by Weather Condition")
-plt.xlabel("Weather Condition")
-plt.ylabel("Average AQI")
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
-#Line Plot: AQI Over Time
-# Ensure the 'Date' column is datetime
-data['Date'] = pd.to_datetime(data['Date'])
+    # Create a figure with two subplots
+    fig, ax1 = plt.subplots()
 
-# Sort data by Date and Hour for a smoother plot
-data = data.sort_values(by=['Date', 'Hour'])
+    # Plot Avg AQI
+    ax1.bar(conditions, avg_aqi, alpha=0.7, color='b', label='Avg AQI')
+    ax1.set_xlabel("Conditions")
+    ax1.set_ylabel("Avg AQI", color='b')
+    ax1.tick_params(axis='y', labelcolor='b')
 
-plt.figure(figsize=(12, 6))
-plt.plot(data['Date'] + pd.to_timedelta(data['Hour'], unit='h'), data['AQI'], marker='o', linestyle='-', color='green')
-plt.title("AQI Over Time")
-plt.xlabel("Date and Hour")
-plt.ylabel("Air Quality Index (AQI)")
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
+    # Add Avg Temp as a line plot on a secondary y-axis
+    ax2 = ax1.twinx()
+    ax2.plot(conditions, avg_temp, color='r', marker='o', label='Avg Temp (°C)')
+    ax2.set_ylabel("Avg Temp (°C)", color='r')
+    ax2.tick_params(axis='y', labelcolor='r')
 
-#Save Plot as a File
-plt.savefig("scatter_temperature_aqi.png", dpi=300)
+    # Add a title and legend
+    fig.suptitle("Average AQI and Temperature by Condition")
+    fig.tight_layout()
+    plt.show()
+
+# Run the calculation
+averages = calculate_averages()
+
+# Plot the results
+plot_averages(averages)
+
+# Close the database connection
+conn.close()

@@ -7,6 +7,8 @@
 
 
 
+import sqlite3
+import matplotlib.pyplot as plt
 
 # Connect to the database
 conn = sqlite3.connect("WeatherAirQuality.db")

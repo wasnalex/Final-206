@@ -1,80 +1,121 @@
-# Final Project - SI 206/ Fall 2024
-# Group name: Popcorn
-# Aleandra Wasington
-# Olga Hamilton
-# Weather and AirQuality APIs, SQL, and Visualizations
-
 import sqlite3
-import csv
 
 # Connect to the database
 conn = sqlite3.connect("WeatherAirQuality.db")
 cur = conn.cursor()
 
+def initialize_database():
+    """
+    Initializes the database by creating necessary tables if they don't exist.
+    """
+    # Create WeatherConditions table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS WeatherConditions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            condition TEXT NOT NULL UNIQUE
+        )
+    ''')
+    print("Created WeatherConditions table.")
+
+    # Create WeatherAirQualityData table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS WeatherAirQualityData (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hour TEXT NOT NULL,
+            temp_c REAL,
+            wind_mph REAL,
+            humidity INTEGER,
+            aqi INTEGER,
+            main_pollutant TEXT,
+            condition_id INTEGER
+        )
+    ''')
+    print("Created WeatherAirQualityData table.")
+
+    # Populate WeatherConditions if empty
+    cur.execute("SELECT COUNT(*) FROM WeatherConditions")
+    if cur.fetchone()[0] == 0:
+        conditions = [("Cloudy",), ("Overcast",), ("Partly Cloudy",), ("Mist",)]
+        cur.executemany("INSERT INTO WeatherConditions (condition) VALUES (?)", conditions)
+        conn.commit()
+        print("Populated WeatherConditions table.")
+
+def verify_weatherdata_structure():
+    """
+    Prints the structure of the WeatherData table to debug missing columns.
+    """
+    cur.execute("PRAGMA table_info(WeatherData)")
+    columns = cur.fetchall()
+    print("\nWeatherData table structure:")
+    for column in columns:
+        print(column)
+
 def combine_weather_air_data():
     """
-    Combines data from WeatherData and AirQualityData using SELECT and JOIN
-    and inserts the result into WeatherAirQualityData.
+    Combines data from WeatherData and AirQualityData by matching date and hour,
+    maps condition_id using WeatherConditions, and inserts up to 100 rows into WeatherAirQualityData.
     """
-    print("Combining data from WeatherData and AirQualityData...")
+    print("\nCombining data from WeatherData and AirQualityData...")
 
-    # SQL JOIN query to combine the data
+    # Debugging: Print WeatherData rows to verify contents
+    cur.execute("SELECT * FROM WeatherData LIMIT 10")
+    weather_data_sample = cur.fetchall()
+    print("\nSample data from WeatherData:")
+    for row in weather_data_sample:
+        print(row)
+
+    # Combine data and insert into WeatherAirQualityData
     cur.execute('''
-        SELECT w.date, w.hour, w.temp_c, w.condition, w.wind_mph, w.humidity, 
-               a.aqi AS aqi_category, a.main_pollutant
+        INSERT INTO WeatherAirQualityData (hour, temp_c, wind_mph, humidity, aqi, main_pollutant, condition_id)
+        SELECT 
+            w.hour,
+            w.temp_c,
+            w.wind_mph,
+            w.humidity,
+            a.aqi,
+            a.main_pollutant,
+            w.condition_id
         FROM WeatherData w
         JOIN Dates d ON w.date = d.date
-        JOIN AirQualityData a ON d.id = a.date_id AND w.hour = a.hour
+        JOIN AirQualityData a ON a.date_id = d.id AND w.hour = a.hour
+        WHERE w.condition_id IS NOT NULL
+        LIMIT 100
     ''')
-    combined_data = cur.fetchall()
-
-    if not combined_data:
-        print("No matching data found between WeatherData and AirQualityData.")
-        return
-
-    print(f"Found {len(combined_data)} rows to insert into WeatherAirQualityData.")
-
-    # Insert combined data into WeatherAirQualityData table
-    cur.executemany('''
-        INSERT INTO WeatherAirQualityData 
-        (date, hour, temp_c, condition, wind_mph, humidity, aqi_category, main_pollutant)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', combined_data)
-
     conn.commit()
-    print(f"Inserted {len(combined_data)} rows into WeatherAirQualityData.")
+    print("Inserted up to 100 rows into WeatherAirQualityData.")
 
-def export_to_csv():
+def verify_table_structure():
     """
-    Exports data from WeatherAirQualityData to a CSV file.
+    Prints the structure of WeatherAirQualityData to verify the schema.
     """
-    print("Exporting WeatherAirQualityData to CSV...")
+    cur.execute("PRAGMA table_info(WeatherAirQualityData)")
+    columns = cur.fetchall()
+    print("\nUpdated WeatherAirQualityData table structure:")
+    for column in columns:
+        print(column)
 
-    # Fetch data from the combined table
-    cur.execute("SELECT * FROM WeatherAirQualityData")
-    data = cur.fetchall()
+def verify_data():
+    """
+    Prints sample data from WeatherAirQualityData to verify the inserted rows.
+    """
+    cur.execute("SELECT * FROM WeatherAirQualityData LIMIT 10")
+    rows = cur.fetchall()
+    print("\nSample data from WeatherAirQualityData:")
+    for row in rows:
+        print(row)
 
-    if not data:
-        print("No data found in WeatherAirQualityData to export.")
-        return
+# Initialize database and tables
+initialize_database()
 
-    # Define the CSV file name
-    csv_file = "WeatherAirQualityData.csv"
+# Debug: Verify structure of WeatherData
+verify_weatherdata_structure()
 
-    # Write the data to a CSV file
-    with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        # Write the headers
-        writer.writerow(["id", "date", "hour", "temp_c", "condition", "wind_mph", "humidity", "aqi_category", "main_pollutant"])
-        # Write the data
-        writer.writerows(data)
-
-    print(f"Data successfully exported to {csv_file}.")
-
-# Combine data and export it to a CSV
+# Combine data from WeatherData and AirQualityData
 combine_weather_air_data()
-export_to_csv()
 
+# Verify table structure and sample data
+verify_table_structure()
+verify_data()
+
+# Close the database connection
 conn.close()
-
-
