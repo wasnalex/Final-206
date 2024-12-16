@@ -23,10 +23,11 @@ def count_air_quality_data_by_date():
 
         # Execute the query to get date and count of occurrences
         cur.execute('''
-            SELECT date, COUNT(*) AS occurrences
-            FROM AirQualityData
-            GROUP BY date
-            ORDER BY date
+            SELECT d.date, COUNT(a.date_id) AS occurrences
+            FROM AirQualityData a
+            JOIN Dates d ON a.date_id = d.id
+            GROUP BY d.date
+            ORDER BY d.date
         ''')
         results = cur.fetchall()
 
