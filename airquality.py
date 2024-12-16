@@ -3,7 +3,7 @@
 # Aleandra Wasington
 # Olga Hamilton
 # Weather and AirQuality APIs, SQL, and Visualizations
-
+# AirQuality APIs
 
 import requests
 import sqlite3
@@ -28,6 +28,7 @@ def create_date_table(date):
         )
     ''')
     conn.commit()
+    print("PRINT TABLE:",table_name )
     return table_name
 
 def aqi_to_category(aqi):

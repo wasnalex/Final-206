@@ -3,6 +3,7 @@
 # Aleandra Wasington
 # Olga Hamilton
 # Weather and AirQuality APIs, SQL, and Visualizations
+
 import sqlite3
 import csv
 
@@ -75,4 +76,5 @@ combine_weather_air_data()
 export_to_csv()
 
 conn.close()
+
 

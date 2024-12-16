@@ -1,4 +1,10 @@
+# Final Project - SI 206/ Fall 2024
+# Group name: Popcorn
+# Aleandra Wasington
+# Olga Hamilton
+# Weather and AirQuality APIs, SQL, and Visualizations
 # pull all queries, and every file plus visualizations here
+
 import pandas as pd
 import matplotlib.pyplot as plt
 

@@ -3,6 +3,7 @@
 # Aleandra Wasington
 # Olga Hamilton
 # Weather and AirQuality APIs, SQL, and Visualizations
+# Weather API
 
 import requests
 import sqlite3
@@ -30,6 +31,7 @@ def create_date_table(date):
             )
         ''')
         conn.commit()
+       # print("PRINT TABLE:",table_name )
     return table_name
 
 def fetch_weather_data(location, api_key, start_date, end_date):
@@ -51,6 +53,7 @@ def fetch_weather_data(location, api_key, start_date, end_date):
             table_name = create_date_table(date_str)
             row_count = 0  # Track rows inserted
 
+            # limiting row to >= 25
             for hour_data in data["forecast"]["forecastday"][0]["hour"]:
                 if row_count >= 25:
                     print(f"Row limit reached for {date_str}. Stopping insertion.")
