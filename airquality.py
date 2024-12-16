@@ -22,9 +22,10 @@ def create_date_table(date):
     cur.execute(f'''
         CREATE TABLE IF NOT EXISTS {table_name} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            hour TEXT NOT NULL,
-            aqi_category INTEGER NOT NULL,
-            main_pollutant TEXT NOT NULL
+            date DATE ,
+            hour TEXT ,
+            aqi_category INTEGER ,
+            main_pollutant TEXT 
         )
     ''')
     conn.commit()
@@ -94,9 +95,9 @@ def fetch_air_quality_data(city, state, country, api_key, current_date):
 
             # Insert into the specific date's table
             cur.execute(f'''
-                INSERT INTO {table_name} (hour, aqi_category, main_pollutant)
-                VALUES (?, ?, ?)
-            ''', (hour_time, aqi_category, main_pollutant))
+                INSERT INTO {table_name} (date, hour, aqi_category, main_pollutant)
+                VALUES (?, ?, ?, ?)
+            ''', (date, hour_time, aqi_category, main_pollutant))
             row_count += 1
 
         conn.commit()

@@ -21,7 +21,8 @@ def initialize_database():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS WeatherAirQualityData (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            hour TEXT NOT NULL,
+            date Date NOT NULL,
+            hour HOUR NOT NULL,
             temp_c REAL,
             wind_mph REAL,
             humidity INTEGER,
